@@ -3,7 +3,6 @@ from typing import Any, Final
 
 
 class TokenType(Enum):
-
     IDENT = auto()
 
     # Data types
@@ -27,11 +26,6 @@ class TokenType(Enum):
     # Keywords
     PRINT = auto()
 
-    # To stop linters complaining about accessing private variables
-    @property
-    def name_(self):
-        return self._name_
-
 
 class Token:
     """Represents a semantic token within Lava source code as determined by the lexer.
@@ -42,8 +36,10 @@ class Token:
     """
 
     def __init__(self, type_: TokenType, value: Any = None):
+        print("Here,", type_, flush=True)
         self.type: Final[TokenType] = type_
         self.value: Final[Any] = value
 
     def __repr__(self) -> str:
-        return f"Token({self.type.name_} with value {self.value})"
+        print(self.type, flush=True)
+        return f"Token({self.type._name_} with value {self.value})"

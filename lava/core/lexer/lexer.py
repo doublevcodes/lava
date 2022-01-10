@@ -4,11 +4,13 @@ from unicodedata import normalize as normalise
 from lava.core.lexer import Token, TokenType
 
 
-def is_keyword(keyword: str) -> bool:
+def is_keyword(keyword: str) -> Token:
     keywords = {
-        "print",
+        "print": TokenType.PRINT,
     }
-    return keyword in keywords
+    return Token(
+        keywords.get(keyword),
+    )
 
 
 class Lexer:
@@ -58,13 +60,13 @@ class Lexer:
                 self.advance()
                 continue
 
-            elif char == "\"" or self.lexing_string:
+            elif char == '"' or self.lexing_string:
                 if token := self.lex_string(char):
                     yield token
                 self.advance()
                 continue
 
-            elif char in {"+", "-", "*", "/", "=", "^", "@", "\'", "&", "|"}:
+            elif char in {"+", "-", "*", "/", "=", "^", "@", "'", "&", "|"}:
                 if token := self.lex_arithmetic_op(char):
                     yield token
                 self.advance()
@@ -138,29 +140,24 @@ class Lexer:
             "/": TokenType.SLASH,
             "^": TokenType.CARET,
             "@": TokenType.AT_SYMBOL,
-            "\'": TokenType.SINGLE_QUOTE,
+            "'": TokenType.SINGLE_QUOTE,
             "&": TokenType.AMPERSAND,
-            "|": TokenType.PIPE
-
+            "|": TokenType.PIPE,
         }
         if op in [double_char_op[0] for double_char_op in double_char_ops]:
             if op + self.peek() in double_char_ops:
                 op += self.peek()
                 self.should_skip = True
-        return Token(
-            op_map.get(op),
-            op
-        )
+        return Token(op_map.get(op), op)
 
     def lex_string(self, char: str) -> Token:
-        self.lexing_string = not self.lexing_string if char == "\"" else self.lexing_string
-        self.cache(
-            char,
-            append=True
+        self.lexing_string = (
+            not self.lexing_string if char == '"' else self.lexing_string
         )
+        self.cache(char, append=True)
         if not self.lexing_string:
             value = self.cache()
-            value = value.strip("\"")
+            value = value.strip('"')
             self.cache(clear=True)
             self.lexing_string = False
             return Token(
@@ -169,8 +166,15 @@ class Lexer:
             )
 
     def lex_identifier(self, char: str) -> Token:
-        self.cache(
-            char,
-            append=True
+        self.lexing_identifier = (
+            not self.lexing_identifier if char.isspace() else self.lexing_identifier
         )
-
+        self.cache(char, append=True)
+        if not self.lexing_identifier:
+            value = self.cache()
+            self.cache(clear=True)
+            self.lexing_identifier = False
+            return Token(
+                TokenType.IDENT,
+                value,
+            )
