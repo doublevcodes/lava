@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "lava-lang"
+version = "0.1.0"
+description = "A language only rock monsters understand"
+authors = ["Vivaan Verma <54081925+doublevcodes@users.noreply.github.com>"]
+license = "AGPL"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.10"
+llvmlite = "^0.37.0"
+
+[tool.poetry.dev-dependencies]
+black = "^21.12b0"
+flake8 = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
