@@ -4,15 +4,6 @@ from unicodedata import normalize as normalise
 from lava.core.lexer import Token, TokenType
 
 
-def is_keyword(keyword: str) -> Token:
-    keywords = {
-        "print": TokenType.PRINT,
-    }
-    return Token(
-        keywords.get(keyword),
-    )
-
-
 class Lexer:
     """Lexer for Lava source code.
 
@@ -40,9 +31,11 @@ class Lexer:
         # The current index in the source code.
         self.index: int = 0
 
-        self.value_cache: Any = ""
-        self.lexing_string: bool = False
-        self.lexing_identifier: bool = False
+        self.cache: dict[str, str] = {
+            "numeric": "",
+            "string": "",
+            "ident": ""
+        }
         self.should_skip: bool = False
 
     def __iter__(self) -> Iterator:
@@ -60,7 +53,7 @@ class Lexer:
                 self.advance()
                 continue
 
-            elif char == '"' or self.lexing_string:
+            elif char == '"':
                 if token := self.lex_string(char):
                     yield token
                 self.advance()
@@ -80,10 +73,6 @@ class Lexer:
 
             else:
                 if token := self.lex_identifier(char):
-                    if keyword := is_keyword(token.value):
-                        yield keyword
-                        self.advance()
-                        continue
                     yield token
                 self.advance()
                 continue
@@ -101,29 +90,11 @@ class Lexer:
             self.current_col = 0
             self.current_line += 1
 
-    def cache(
-        self,
-        _obj: Optional[str] = None,
-        *,
-        append: Optional[bool] = False,
-        clear: Optional[bool] = False,
-    ) -> Optional[str]:
-        if clear:
-            self.value_cache = ""
-            return
-        if _obj:
-            self.value_cache = self.value_cache + _obj if append else _obj
-            return
-        return self.value_cache
-
     def lex_numeric(self, char: str) -> Optional[Token]:
-        self.cache(
-            char,
-            append=True,
-        )
+        self.cache["numeric"] += char
         if not self.peek().isnumeric():
-            value = self.cache()
-            self.cache(clear=True)
+            value = self.cache["numeric"]
+            self.cache["numeric"] = ""
             return Token(
                 TokenType.INTEGER,
                 value,
@@ -151,29 +122,21 @@ class Lexer:
         return Token(op_map.get(op), op)
 
     def lex_string(self, char: str) -> Token:
-        self.lexing_string = (
-            not self.lexing_string if char == '"' else self.lexing_string
-        )
-        self.cache(char, append=True)
-        if not self.lexing_string:
-            value = self.cache()
+        self.cache["string"] += char
+        if self.peek() == '"':
+            value = self.cache["string"]
             value = value.strip('"')
-            self.cache(clear=True)
-            self.lexing_string = False
+            self.cache["string"] = ""
             return Token(
                 TokenType.STRING,
                 value,
             )
 
     def lex_identifier(self, char: str) -> Token:
-        self.lexing_identifier = (
-            not self.lexing_identifier if char.isspace() else self.lexing_identifier
-        )
-        self.cache(char, append=True)
-        if not self.lexing_identifier:
-            value = self.cache()
-            self.cache(clear=True)
-            self.lexing_identifier = False
+        self.cache["ident"] += char
+        if not self.peek().isalnum():
+            value = self.cache["ident"]
+            self.cache["ident"] = ""
             return Token(
                 TokenType.IDENT,
                 value,

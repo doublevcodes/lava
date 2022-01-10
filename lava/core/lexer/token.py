@@ -36,10 +36,8 @@ class Token:
     """
 
     def __init__(self, type_: TokenType, value: Any = None):
-        print("Here,", type_, flush=True)
         self.type: Final[TokenType] = type_
         self.value: Final[Any] = value
 
     def __repr__(self) -> str:
-        print(self.type, flush=True)
         return f"Token({self.type._name_} with value {self.value})"
